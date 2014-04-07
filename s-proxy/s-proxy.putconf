@@ -1,0 +1,64 @@
+#!usrbinperl
+ 
+use strict;
+use warnings;
+ 
+my $version = 0.1; 
+my $host   = S-proxy;
+my $domain = gsb.lan;
+my $ip     = 172.16.0.2;
+my $mask   = 255.255.255.0;
+my $gw     = 172.16.0.254;
+my $dns1   = 172.16.0.1;
+my $dns2   = 172.16.0.6;
+ 
+# les paquets a installer 
+my $packages = squid3 mc;
+ 
+sub putconf {
+        my ($file, $msg)= @_;
+        print Generation du fichier $file ...n;
+        my $dat = `date`;
+        open (FILE, $file) or die Erreur ecriture fichier $file  $! n;
+        print FILE ### $version - putconf - $dat if ($file ne etchostname) ;
+        print FILE $msg;
+        close FILE;
+};
+ 
+ 
+putconf(etchostname, $hostn);
+ 
+putconf (etchosts,
+127.0.0.1      localhost.localdomain localhost
+127.0.1.1       $host
+$ip     $host.$domain $host
+ 
+# The following lines are desirable for IPv6 capable hosts
+1     ip6-localhost ip6-loopback
+fe000 ip6-localnet
+ff000 ip6-mcastprefix
+ff021 ip6-allnodes
+ff022 ip6-allrouters
+);
+ 
+putconf (etcnetworkinterfaces,
+
+# The loopback network interface
+auto lo
+iface lo inet loopback
+ 
+# The primary network interface
+allow-hotplug eth0
+iface eth0 inet static
+        address $ip
+        netmask $mask
+        gateway $gw
+);
+ 
+putconf (etcresolv.conf,
+domain $domain
+nameserver $dns1
+nameserver $dns2
+);
+ 
+system aptitude install $packages if ($packages);

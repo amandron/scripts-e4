@@ -1,0 +1,93 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+ 
+my $version = "0.2";
+my $host   = "R-ext";
+my $domain = "gsb.lan";
+my $ip     = "192.168.0.50";
+my $mask   = "255.255.255.0";
+my $gw     = "192.168.0.1";
+my $dns1   = "172.16.0.1";
+my $dns2   = "172.16.0.6";
+ 
+sub putconf {
+        my ($file, $msg)= @_;
+        print "Generation du fichier $file ...\n";
+        my $dat = `date`;
+        open (FILE, ">$file") or die "Erreur ecriture fichier $file : $! \n";
+        print FILE "### $version - putconf - $dat" if ($file ne "/etc/hostname") ;
+ ;
+        print FILE $msg;
+        close FILE;
+};
+ 
+putconf("/etc/hostname", "$host\n");
+ 
+putconf ("/etc/hosts",
+"127.0.0.1      localhost.localdomain localhost
+127.0.1.1       $host
+$ip     $host.$domain $host
+192.168.100.254 $host.$domain $host
+192.168.200.253 $host.$domain $host
+ 
+# The following lines are desirable for IPv6 capable hosts
+::1     ip6-localhost ip6-loopback
+fe00::0 ip6-localnet
+ff00::0 ip6-mcastprefix
+ff02::1 ip6-allnodes
+ff02::2 ip6-allrouters
+");
+ 
+putconf ("/etc/network/interfaces",
+"
+# The loopback network interface
+auto lo
+iface lo inet loopback
+
+# premiere carte
+allow-hotplug eth0
+iface eth0 inet static
+        address $ip
+        netmask $mask
+        gateway $gw
+        up /root/nat.sh
+
+# seconde carte
+allow-hotplug eth1
+iface eth1 inet static
+        address 192.168.100.254
+        netmask $mask
+
+
+# troisieme carte
+allow-hotplug eth2
+iface eth2 inet static
+        address 192.168.200.253
+        netmask $mask
+
+# quatrieme carte carte
+allow-hotplug eth3
+iface eth3 inet static
+        address 192.168.1.1
+        netmask 255.255.255.252
+");
+ 
+putconf ("/etc/resolv.conf",
+"domain $domain
+nameserver $dns1
+nameserver $dns2
+");
+
+putconf ("/root/nat.sh",
+"#!/bin/bash
+echo 1 > /proc/sys/net/ipv4/ip_forward
+iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+route add -net 172.16.0.0/16 gw 192.168.200.254
+
+");
+
+
+system "chmod +x /root/nat.sh";
+

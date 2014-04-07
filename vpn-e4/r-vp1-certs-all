@@ -1,0 +1,78 @@
+#/bin/bash
+
+RACROOT=/etc/racoon/certs
+
+echo "Creation de l'autorite de certification ..."
+/usr/lib/ssl/misc/CA.pl -newca
+
+echo "Generation du certificat de r-vp1 ..."
+/usr/lib/ssl/misc/CA.pl -newreq
+
+
+echo "Signature du ertificat de r-vp1 ..."
+/usr/lib/ssl/misc/CA.pl -sign
+
+echo "Deplac. des fichiers cert et key dans $RACROOT ..."
+mv newcert.pem $RACROOT/IPSECcert.pem
+mv newkey.pem $RACROOT/IPSECkey.pem
+mv newreq.pem $RACROOT/IPSECreq.pem
+
+echo "Copie de cacert.pem dans $RACROOT ..."
+cp ./demoCA/cacert.pem $RACROOT
+
+echo "Generation de la liste de revocation ..."
+openssl ca -gencrl -out crl.pem
+
+echo "Copie de la liste dans $RACROOT ..."
+cp crl.pem $RACROOT
+
+echo "Lien entre cacert.pem et hash  ..."
+cd  $RACROOT
+ln -s cacert.pem `openssl x509 -noout -hash < cacert.pem`.0
+
+echo "Lien entre crl.pem et hash  ..."
+cd  $RACROOT
+ln -s crl.pem `openssl x509 -noout -hash < cacert.pem`.r0
+
+echo "Extraction IPSECkey.pem  ..."
+openssl rsa -in IPSECkey.pem -out IPSECkey.pem
+
+cd  ~
+echo "Vous devez avoir une cle publique installee sur R-vp2
+sinon taper <Ctrl-C>"
+read
+#echo "Creation de l'autorite de certification ..."
+#/usr/lib/ssl/misc/CA.pl -newca
+
+echo "Generation du certificat de r-vp2 ..."
+/usr/lib/ssl/misc/CA.pl -newreq
+
+read
+
+echo "Signature du certificat de r-vp2 ..."
+/usr/lib/ssl/misc/CA.pl -sign
+
+read
+
+echo "copie des fichier sur r-vp2 dans $RACROOT ..."
+scp demoCA/cacert.pem newcert.pem newkey.pem newreq.pem crl.pem r-vp2:/etc/racoon/certs/
+
+echo "Renommage des fichiers dans $RACROOT ..."
+(cat <<EOT
+#!/bin/bash
+RACROOT=/etc/racoon/certs
+cd $RACROOT
+mv newcert.pem IPSECcert.pem
+mv newkey.pem IPSECkey.pem
+mv newreq.pem IPSECreq.pem
+echo "Lien entre cacert.pem et hash sur r-vp2 .."
+ln -s cacert.pem \`openssl x509 -noout -hash < cacert.pem\`.0
+echo "Lien entre crl.pem et hash  sur r-vp2 ..."
+ln -s crl.pem \`openssl x509 -noout -hash < cacert.pem\`.r0
+echo "Extraction IPSECkey.pem  sur r-vp2 .."
+openssl rsa -in IPSECkey.pem -out IPSECkey.pem
+EOT
+) > /tmp/r-vp2-config
+scp  /tmp/r-vp2-config r-vp2:/tmp
+echo "vous pouvez lancer bash /tmp/r-vp2-config depuis r-vp2";
+

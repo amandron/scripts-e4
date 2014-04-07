@@ -1,0 +1,39 @@
+#!/bin/bash
+ 
+## Règles iptables.
+ 
+## On vide les règles iptables.
+ 
+iptables -F
+ 
+## On supprime toutes les chaînes utilisateurs.
+ 
+iptables -X
+ 
+## On supprime tout le trafic entrant.
+ 
+iptables -P INPUT DROP
+ 
+## On supprimer tout le trafic sortant.
+ 
+iptables -P OUTPUT DROP
+ 
+## On supprimer le forward.
+ 
+iptables -P FORWARD DROP
+
+## Permettre les connexions relatives au tunnel IPsec.
+iptables -A INPUT -p udp -m multiport --dport isakmp,ipsec-nat-t -m comment --comment ipsec -j ACCEPT
+iptables -A INPUT -p esp -j ACCEPT
+ 
+## On accepte la boucle locale en entrée.
+ 
+iptables -I INPUT -i lo -j ACCEPT
+ 
+## On log les paquets en entrée.
+ 
+iptables -A INPUT -j LOG
+ 
+## On log les paquets forward.
+ 
+iptables -A FORWARD -j LOG 

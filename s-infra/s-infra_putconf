@@ -1,0 +1,173 @@
+#!/usr/bin/perl
+ 
+use strict;
+use warnings;
+ 
+my $version = "0.5"; 
+my $host   = "S-infra";
+my $domain = "gsb.lan";
+my $ip     = "172.16.0.1";
+my $mask   = "255.255.255.0";
+my $gw     = "172.16.0.254";
+my $dns1   = "127.0.0.1";
+my $dns2   = "172.16.0.4";
+ 
+# les paquets a installer 
+my $packages = "postfix bind9 bind9-doc bind9utils ntp";
+ 
+sub putconf {
+        my ($file, $comment, $msg)= @_;
+        print "Generation du fichier $file ...\n";
+        my $dat = `date`;
+        open (FILE, ">$file") or die "Erreur ecriture fichier $file : $! \n";
+        print FILE "$comment $version - putconf - $dat"  if ($comment);
+        print FILE $msg;
+        close FILE;
+};
+ 
+
+system "aptitude install -y $packages" if ($packages);
+ 
+putconf("/etc/hostname", "", "$host\n");
+ 
+putconf ("/etc/hosts", "#",
+"127.0.0.1      localhost.localdomain localhost
+127.0.1.1       $host
+$ip     $host.$domain $host
+ 
+# The following lines are desirable for IPv6 capable hosts
+::1     ip6-localhost ip6-loopback
+fe00::0 ip6-localnet
+ff00::0 ip6-mcastprefix
+ff02::1 ip6-allnodes
+ff02::2 ip6-allrouters
+");
+ 
+putconf ("/etc/network/interfaces", "#",
+"
+# The loopback network interface
+auto lo
+iface lo inet loopback
+ 
+# The primary network interface
+allow-hotplug eth0
+iface eth0 inet static
+        address $ip
+        netmask $mask
+        gateway $gw
+	
+iface eth1 inet dhcp
+");
+ 
+putconf ("/etc/resolv.conf","#",
+"domain $domain
+nameserver $dns1
+");
+ 
+
+putconf ("/etc/bind/named.conf.local", "//",
+"
+//
+// Do any local configuration here
+//
+
+// Consider adding the 1918 zones here, if they are not used in your
+// organization
+//include \"/etc/bind/zones.rfc1918\";
+
+zone \"$domain\" {
+        type master;
+        file \"/etc/bind/db.$domain\";
+};
+
+zone \"16.172.in-addr.arpa\"{
+        type master;
+        notify no;
+        file \"/etc/bind/db.$domain.rev\";
+};
+");
+
+
+putconf ("/etc/bind/named.conf.options", "//",
+"
+options {
+        directory \"/var/cache/bind\";
+
+        // If there is a firewall between you and nameservers you want
+        // to talk to, you may need to fix the firewall to allow multiple
+        // ports to talk.  See http://www.kb.cert.org/vuls/id/800113
+
+        // If your ISP provided one or more IP addresses for stable
+        // nameservers, you probably want to use them as forwarders.
+        // Uncomment the following block, and insert the addresses replacing
+        // the all-0's placeholder.
+
+        forwarders {
+                192.168.0.1;
+
+         };
+
+        auth-nxdomain no;    # conform to RFC1035
+        listen-on-v6 { any; };
+};
+
+");
+
+putconf ("/etc/bind/db.$domain", ";",
+"
+;
+; BIND data file for local loopback interface
+;
+\$TTL    604800
+@       IN      SOA     $host.$domain. root.$host.$domain. (
+                        2013041201      ; Serial
+                        7200	        ; Refresh
+                        86400           ; Retry
+                        8419200         ; Expire
+                        604800 )        ; Negative Cache TTL
+;
+@       	IN      NS      $host.$domain.
+@		IN      NS      S-backup.$domain.
+@      	        IN      A       127.0.0.1
+@       	IN      AAAA    ::1
+$host  	        IN      A       $ip
+S-backup        IN      A	172.16.0.4
+S-proxy         IN      A       172.16.0.2
+S-appli    	IN      A       172.16.0.3
+S-win    	IN      A       172.16.0.6
+S-mess   	IN      A       172.16.0.7
+S-mon    	IN      A       172.16.0.8
+R-int    	IN      A       172.16.0.254
+R-int-lnk    	IN      A       192.168.200.254
+R-ext  		IN      A       192.168.200.253
+ns   	        IN      CNAME   $host.$domain.	
+");
+
+putconf ("/etc/bind/db.$domain.rev", ";",
+"
+;
+; BIND data file for local loopback interface
+;
+\$TTL    604800
+@       IN      SOA     $host.$domain. root.$host.$domain. (
+                        2013041101      ; Serial
+                        7200            ; Refresh
+                        86400           ; Retry
+                        8419200         ; Expire
+                        604800 )        ; Negative Cache TTL
+;
+@         IN      NS      $host.$domain.
+@         IN      NS      S-backup.$domain.
+1.0       IN      PTR     $host.$domain.
+4.0       IN      PTR     S-backup.$domain.
+2.0       IN      PTR     S-proxy.$domain.
+3.0       IN      PTR     S-appli.$domain.
+6.0       IN      PTR     S-win.$domain.
+7.0       IN      PTR     S-mess.$domain.
+8.0       IN      PTR     S-mon.$domain.
+254.0     IN      PTR     R-int.$domain.
+");
+
+
+system "echo '\$ModLoad imudp' >> /etc/rsyslog.conf" ;
+system "echo '\$UDPServerRun 514' >> /etc/rsyslog.conf" ;
