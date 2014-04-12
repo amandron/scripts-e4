@@ -8,7 +8,7 @@ my $host   = "R-vp1";
 my $remhost   = "R-vp2";
 my $domain = "gsb.lan";
 my $ip1    = "192.168.1.2";  # eth0 interne
-my $ip2    = "10.0.0.1"; # eth1 liaison
+my $ip2    = "10.0.0.1"; # eth1 liaison vpn
 my $remip  = "10.0.0.2";
 my $mask   = "255.255.255.252";
 
@@ -61,7 +61,7 @@ iptables -P OUTPUT DROP
 iptables -P FORWARD DROP
 
 ## Permettre les connexions relatives au tunnel IPsec.
-iptables -A INPUT -p udp -m multiport --dport isakmp,ipsec-nat-t -m comment --comment ipsec -j ACCEPT
+iptables -A INPUT -p udp -m multiport --dport isakmp,ipsec,nat-t -m comment --comment ipsec -j ACCEPT
 iptables -A INPUT -p esp -j ACCEPT
  
 ## On accepte la boucle locale en entrée.
@@ -105,14 +105,14 @@ allow-hotplug eth0
 iface eth0 inet static
         address $ip1
         netmask $mask
-	gateway $gw
+		gateway $gw
 	up /root/iptables.sh
 
 allow-hotplug eth1
 iface eth1 inet static
         address $ip2
         netmask $mask
-	up route add -net $remnet/24 gw $ip1
+	up route add -net $remnet/24 gw $ip2
 	up route add -net 172.16.0.0/24 gw 192.168.1.1
 	up /sbin/sysctl -w net.ipv4.ip_forward='1' 
 
@@ -123,7 +123,7 @@ putconf ("/etc/resolv.conf",
 nameserver $dns1
 ");
 
-putconf (" /etc/racoon/racoon.conf",
+putconf ("/etc/racoon/racoon.conf",
 "
 
 path certificate \"/etc/racoon/certs\";
@@ -167,22 +167,20 @@ spdadd $remnet/24 $mynet/24 any -P in ipsec
 ");
 putconf ("/usr/lib/ssl/openssl.cnf",
 "
-#
 # OpenSSL example configuration file.
 # This is mostly being used for generation of certificate requests.
-#
 
 # This definition stops the following lines choking if HOME isn't
 # defined.
 HOME = .
-RANDFILE = $ENV::HOME/.rnd
+RANDFILE = \$ENV::HOME/.rnd
 
 # Extra OBJECT IDENTIFIER info:
-#oid_file = $ENV::HOME/.oid
+#oid_file = \$ENV::HOME/.oid
 oid_section = new_oids
 
-# To use this configuration file with the "-extfile" option of the
-# "openssl x509" utility, name here the section containing the
+# To use this configuration file with the \"-extfile\" option of the
+# \"openssl x509\" utility, name here the section containing the
 # X.509v3 extensions to use:
 # extensions =
 # (Alternatively, use a configuration file that has only
@@ -194,7 +192,7 @@ oid_section = new_oids
 # Add a simple OID like this:
 # testoid1=1.2.3.4
 # Or use config file substitution like this:
-# testoid2=${testoid1}.5.6
+# testoid2=\${testoid1}.5.6
 
 # Policies used by the TSA examples.
 tsa_policy1 = 1.2.3.4.1
@@ -209,24 +207,24 @@ default_ca = CA_default # The default ca section
 [ CA_default ]
 
 dir = /root/scripts/demoCA # Where everything is kept
-certs = $dir/certs # Where the issued certs are kept
-crl_dir = $dir/crl # Where the issued crl are kept
-database = $dir/index.txt # database index file.
+certs = \$dir/certs # Where the issued certs are kept
+crl_dir = \$dir/crl # Where the issued crl are kept
+database = \$dir/index.txt # database index file.
 #unique_subject = no # Set to 'no' to allow creation of
 # several ctificates with same subject.
-new_certs_dir = $dir/newcerts # default place for new certs.
+new_certs_dir = \$dir/newcerts # default place for new certs.
 
-certificate = $dir/cacert.pem # The CA certificate
-serial = $dir/serial # The current serial number
-crlnumber = $dir/crlnumber # the current crl number
+certificate = \$dir/cacert.pem # The CA certificate
+serial = \$dir/serial # The current serial number
+crlnumber = \$dir/crlnumber # the current crl number
 # must be commented out to leave a V1 CRL
-crl = $dir/crl.pem # The current CRL
-private_key = $dir/private/cakey.pem# The private key
-RANDFILE = $dir/private/.rand # private random number file
+crl = \$dir/crl.pem # The current CRL
+private_key = \$dir/private/cakey.pem# The private key
+RANDFILE = \$dir/private/.rand # private random number file
 
 x509_extensions = usr_cert # The extentions to add to the cert
 
-# Comment out the following two lines for the "traditional"
+# Comment out the following two lines for the \"traditional\"
 # (and highly broken) format.
 name_opt = ca_default # Subject Name options
 cert_opt = ca_default # Certificate field options
@@ -313,14 +311,14 @@ localityName = Dijon
 #1.organizationName_default = Le Castel
 
 organizationalUnitName = Organizational Unit Name (eg, section)
-#organizationalUnitName_default = Le Castel
+organizationalUnitName_default = Le Castel
 
 commonName = Common Name (e.g. server FQDN or YOUR name)
 commonName_max = 64
 
 emailAddress = Email Address
 emailAddress_max = 64
-emailAddress_default = administrator@gsb.lan
+emailAddress_default = administrator\@gsb.lan
 
 # SET-ex3 = SET extension number 3
 
@@ -359,7 +357,7 @@ basicConstraints=CA:FALSE
 # keyUsage = nonRepudiation, digitalSignature, keyEncipherment
 
 # This will be displayed in Netscape's comment listbox.
-nsComment = "OpenSSL Generated Certificate"
+nsComment = \"OpenSSL Generated Certificate\"
 
 # PKIX recommendations harmless if included in all certificates.
 subjectKeyIdentifier=hash
@@ -464,7 +462,7 @@ basicConstraints=CA:FALSE
 # keyUsage = nonRepudiation, digitalSignature, keyEncipherment
 
 # This will be displayed in Netscape's comment listbox.
-nsComment = "OpenSSL Generated Certificate"
+nsComment = \"OpenSSL Generated Certificate\"
 
 # PKIX recommendations harmless if included in all certificates.
 subjectKeyIdentifier=hash
@@ -499,13 +497,13 @@ default_tsa = tsa_config1 # the default TSA section
 
 # These are used by the TSA reply generation only.
 dir = ./demoCA # TSA root directory
-serial = $dir/tsaserial # The current serial number (mandatory)
+serial = \$dir/tsaserial # The current serial number (mandatory)
 crypto_device = builtin # OpenSSL engine to use for signing
-signer_cert = $dir/tsacert.pem # The TSA signing certificate
+signer_cert = \$dir/tsacert.pem # The TSA signing certificate
 # (optional)
-certs = $dir/cacert.pem # Certificate chain to include in reply
+certs = \$dir/cacert.pem # Certificate chain to include in reply
 # (optional)
-signer_key = $dir/private/tsakey.pem # The TSA private key (optional)
+signer_key = \$dir/private/tsakey.pem # The TSA private key (optional)
 
 default_policy = tsa_policy1 # Policy if request did not specify it
 # (optional)

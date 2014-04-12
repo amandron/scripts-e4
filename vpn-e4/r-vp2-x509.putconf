@@ -62,7 +62,7 @@ iptables -P OUTPUT DROP
 iptables -P FORWARD DROP
 
 ## Permettre les connexions relatives au tunnel IPsec.
-iptables -A INPUT -p udp -m multiport --dport isakmp,ipsec-nat-t -m comment --comment ipsec -j ACCEPT
+iptables -A INPUT -p udp -m multiport --dport isakmp -m comment --comment ipsec -j ACCEPT
 iptables -A INPUT -p esp -j ACCEPT
  
 ## On accepte la boucle locale en entrée.
@@ -129,7 +129,7 @@ allow-hotplug eth1
 iface eth1 inet static
         address $ip2
         netmask $mask
-	up route add -net $remnet/24 gw $ip1
+	up route add -net $remnet/24 gw $ip2
 	up /sbin/systl -w net.ipv4.ip-forward='1'
 
 ");
@@ -179,5 +179,26 @@ spdadd $mynet/24 $remnet/24 any -P out ipsec
 
 spdadd $remnet/24 $mynet/24 any -P in ipsec
            esp/tunnel/$remip-$ip2/require;
+
+");
+
+putconf ("/root/scripts/r-vp2-cert-config.sh",
+"
+#!/bin/bash
+
+# Renommage des fichiers 
+cd /etc/racoon/certs/
+mv newcert.pem IPSECcert.pem
+mv newkey.pem IPSECkey.pem
+mv newreq.pem IPSECreq.pem
+
+#Lien entre cacert.pem et hash sur r-vp2
+ln -s cacert.pem \`openssl x509 -noout -hash < cacert.pem\`.0
+
+#Lien entre crl.pem et hash  sur r-vp2 ..."
+ln -s crl.pem \`openssl x509 -noout -hash < cacert.pem\`.r0
+
+#Dechiffrement de la clé pour racoon
+openssl rsa -in IPSECkey.pem -out IPSECkey.pem
 
 ");

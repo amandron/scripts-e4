@@ -8,7 +8,6 @@ echo "Creation de l'autorite de certification ..."
 echo "Generation du certificat de r-vp1 ..."
 /usr/lib/ssl/misc/CA.pl -newreq
 
-
 echo "Signature du ertificat de r-vp1 ..."
 /usr/lib/ssl/misc/CA.pl -sign
 
@@ -55,7 +54,7 @@ echo "Signature du certificat de r-vp2 ..."
 read
 
 echo "copie des fichier sur r-vp2 dans $RACROOT ..."
-scp demoCA/cacert.pem newcert.pem newkey.pem newreq.pem crl.pem r-vp2:/etc/racoon/certs/
+scp /root/scripts/demoCA/cacert.pem newcert.pem newkey.pem newreq.pem crl.pem r-vp2:/etc/racoon/certs/
 
 echo "Renommage des fichiers dans $RACROOT ..."
 (cat <<EOT
@@ -75,4 +74,3 @@ EOT
 ) > /tmp/r-vp2-config
 scp  /tmp/r-vp2-config r-vp2:/tmp
 echo "vous pouvez lancer bash /tmp/r-vp2-config depuis r-vp2";
-
