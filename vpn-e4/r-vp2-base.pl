@@ -1,5 +1,5 @@
 #!/usr/bin/perl
- 
+
 use strict;
 use warnings;
  
@@ -18,10 +18,7 @@ my $remnet = "192.168.1.0";
 my $gw     = "10.0.0.2";
 my $dns1   = "172.16.0.6";
 my $dns2   = "172.16.0.1";
- 
-# les paquets a installer 
-my $packages = "racoon ipsec-tools tcpdump";
- 
+
 sub putconf {
         my ($file, $msg)= @_;
         print "Generation du fichier $file ...\n";
@@ -32,10 +29,7 @@ sub putconf {
         close FILE;
 };
  
- 
-system "aptitude install $packages" if ($packages);
-
-putconf("/etc/hostname", "$host\n");
+ putconf("/etc/hostname", "$host\n");
  
 putconf ("/etc/hosts",
 "127.0.0.1      localhost.localdomain localhost
@@ -80,68 +74,19 @@ allow-hotplug eth0
 iface eth0 inet static
         address $ip1
         netmask $mask
-        up /root/routage.sh
         up /root/iptables.sh
 
 allow-hotplug eth1
 iface eth1 inet static
         address $ip2
         netmask $mask
+    up route add -net 192.168.1.0 netmask 255.255.255.252 gw 10.0.0.1
+	up /sbin/sysctl -w net.ipv4.ip_forward='1'
+
 ");
  
 putconf ("/etc/resolv.conf",
 "domain $domain
 nameserver $dns1
 nameserver $dns2
-");
-
-putconf ("/root/routage.sh",
-"#!/bin/bash
-echo 1 > /proc/sys/net/ipv4/ip_forward
-route add -net 192.168.1.0/30 gw 172.16.128.254
-");
-
-
-system "chmod +x /root/routage.sh";
-
-putconf (" /etc/racoon/racoon.conf",
-"
-path certificate \"/etc/racoon/certs\";
-
-remote $remip \{
-	exchange_mode main;
-	certificate_type x509 \"IPSECcert.pem\" \"IPSECkey.pem\";
-	verify_cert on;
-	my_identifier asn1dn;
-	peers_identifier asn1dn;
-	proposal \{
-		encryption_algorithm 3des;
-		hash_algorithm md5;
-		authentication_method rsasig;
-		dh_group modp1024;
-	\}
-\}
-
-sainfo anonymous \{
-	pfs_group modp768;
-	encryption_algorithm 3des;
-	authentication_algorithm hmac_md5;
-	compression_algorithm deflate;
-\}
-
-");
-
-
-
-putconf (" /etc/ipsec-tools.conf",
-"
-flush;
-spdflush;
-
-spdadd $mynet/24 $remnet/24 any -P out ipsec
-           esp/tunnel/$ip2-$remip/require;
-
-spdadd $remnet/24 $mynet/24 any -P in ipsec
-           esp/tunnel/$remip-$ip2/require;
-
 ");

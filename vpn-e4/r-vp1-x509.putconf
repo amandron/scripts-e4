@@ -34,48 +34,6 @@ sub putconf {
  
 system "aptitude install $packages" if ($packages);
 
-putconf ("/root/iptables.sh",
-"
-#!/bin/bash
- 
-## Règles iptables.
- 
-## On vide les règles iptables.
- 
-iptables -F
- 
-## On supprime toutes les chaînes utilisateurs.
- 
-iptables -X
- 
-## On supprime tout le trafic entrant.
- 
-iptables -P INPUT DROP
- 
-## On supprimer tout le trafic sortant.
- 
-iptables -P OUTPUT DROP
- 
-## On supprimer le forward.
- 
-iptables -P FORWARD DROP
-
-## Permettre les connexions relatives au tunnel IPsec.
-iptables -A INPUT -p udp -m multiport --dport isakmp,ipsec,nat-t -m comment --comment ipsec -j ACCEPT
-iptables -A INPUT -p esp -j ACCEPT
- 
-## On accepte la boucle locale en entrée.
- 
-iptables -I INPUT -i lo -j ACCEPT
- 
-## On log les paquets en entrée.
- 
-iptables -A INPUT -j LOG
- 
-## On log les paquets forward.
- 
-iptables -A FORWARD -j LOG 
-");
 
 putconf("/etc/hostname", "$host\n");
  
@@ -106,17 +64,27 @@ iface eth0 inet static
         address $ip1
         netmask $mask
 		gateway $gw
+	up /root/routage.sh
 	up /root/iptables.sh
 
 allow-hotplug eth1
 iface eth1 inet static
         address $ip2
-        netmask $mask
-	up route add -net $remnet/24 gw $ip2
-	up route add -net 172.16.0.0/24 gw 192.168.1.1
+        netmask 255.255.255.0
+	up route add -net 172.16.0.0 n netmask 255.255.255.0 gw 192.168.1.1
 	up /sbin/sysctl -w net.ipv4.ip_forward='1' 
 
 ");
+
+putconf ("/root/routage.sh",
+"#!/bin/bash
+echo 1 > /proc/sys/net/ipv4/ip_forward
+route add -net 172.16.128.0/24 gw 192.168.1.2
+");
+
+
+system "chmod +x /root/routage.sh";
+
  
 putconf ("/etc/resolv.conf",
 "domain $domain
@@ -519,5 +487,3 @@ ess_cert_id_chain = no # Must the ESS cert id chain be included?
 # (optional, default: no)
 
 ");
-
-

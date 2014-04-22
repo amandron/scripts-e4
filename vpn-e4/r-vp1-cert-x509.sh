@@ -30,11 +30,11 @@ cp crl.pem /etc/racoon/certs
 
 #Lien entre cacert.pem et hash 
 cd /etc/racoon/certs/
-ln -s cacert.pem `openssl x509 -noout -hash < cacert.pem`.0
+ln -s cacert.pem $(openssl x509 -noout -hash < cacert.pem).0
 
 #Lien entre crl.pem et hash 
 cd  /etc/racoon/certs/
-ln -s crl.pem `openssl x509 -noout -hash < cacert.pem`.r0
+ln -s crl.pem $(openssl x509 -noout -hash < cacert.pem).r0
 
 #Déchiffrement mot de passe de la clé pour racoon
 cd /etc/racoon/certs/

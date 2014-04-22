@@ -62,7 +62,7 @@ echo "Renommage des fichiers dans $RACROOT ..."
 RACROOT=/etc/racoon/certs
 cd $RACROOT
 mv newcert.pem IPSECcert.pem
-mv newkey.pem IPSECkey.pem
+mv newkey.pem IPSEkCey.pem
 mv newreq.pem IPSECreq.pem
 echo "Lien entre cacert.pem et hash sur r-vp2 .."
 ln -s cacert.pem \`openssl x509 -noout -hash < cacert.pem\`.0

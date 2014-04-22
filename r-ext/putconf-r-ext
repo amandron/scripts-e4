@@ -85,7 +85,7 @@ putconf ("/root/nat.sh",
 echo 1 > /proc/sys/net/ipv4/ip_forward
 iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
 route add -net 172.16.0.0/16 gw 192.168.200.254
-
+route add -net 172.16.128.0/24 gw 192.168.1.2
 ");
 
 
