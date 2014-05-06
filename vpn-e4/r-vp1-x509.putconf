@@ -5,7 +5,7 @@ use warnings;
  
 my $version = "0.3.1" ;
 my $host   = "R-vp1";
-my $remhost   = "R-vp2";
+my $remhost = "R-vp2";
 my $domain = "gsb.lan";
 my $ip1    = "192.168.1.2";  # eth0 interne
 my $ip2    = "10.0.0.1"; # eth1 liaison vpn

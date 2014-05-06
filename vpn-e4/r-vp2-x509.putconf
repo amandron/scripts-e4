@@ -20,7 +20,7 @@ my $dns1   = "172.16.0.6";
 my $dns2   = "172.16.0.1";
  
 # les paquets a installer 
-my $packages = "racoon ipsec-tools tcpdump";
+my $packages = "racoon ipsec-tools tcpdump isc-dhcp-server";
  
 sub putconf {
         my ($file, $msg)= @_;
@@ -145,3 +145,19 @@ spdadd $remnet/24 $mynet/24 any -P in ipsec
            esp/tunnel/$remip-$ip2/require;
 
 ");
+
+putconf ("/etc/dhcp/dhcpd.conf",
+"
+  subnet 172.16.128.0 netmask 255.255.255.0 {
+  range 172.16.128.10 172.16.128.30;
+  option domain-name-servers $dns1, $dns2;
+  option domain-name \"$domain\";
+  option routers 172.16.128.254;
+  option broadcast-address 172.16.128.255;
+  default-lease-time 86400;
+  max-lease-time 604800;
+}
+");
+system "echo '*.* \@S-infra' >> /etc/rsyslog.conf " ;
+
+system("service isc-dhcp-server restart");
