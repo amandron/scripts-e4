@@ -103,9 +103,12 @@ remote $remip \{
 	my_identifier asn1dn;
 	peers_identifier asn1dn;
 	proposal \{
-		encryption_algorithm 3des;
-		hash_algorithm md5;
+		proposal
+	{
+	        encryption_algorithm    aes;
+	        hash_algorithm          sha1
 		authentication_method rsasig;
+	        lifetime time 24 hours;
 		dh_group modp1024;
 	\}
 \}
@@ -192,11 +195,29 @@ putconf (" /etc/ipsec-tools.conf",
 flush;
 spdflush;
 
-spdadd $mynet/24 $remnet/24 any -P out ipsec
-           esp/tunnel/$ip2-$remip/require;
+ # Inbound traffic
 
-spdadd $remnet/24 $mynet/24 any -P in ipsec
-           esp/tunnel/$remip-$ip2/require;
+    spdadd  192.168.200.0/24  172.16.128.0/24  any  \
+	-P out  ipsec esp/tunnel/10.0.0.2-10.0.0.1/unique;
+    spdadd  172.16.0.0/24  172.16.0.0/24  any  \
+	-P out  ipsec esp/tunnel/10.0.0.2-10.0.0.1/unique;
+
+    spdadd  192.168.200.0/24  192.168.1.0/24  any  \
+	-P out  ipsec esp/tunnel/10.0.0.2-10.0.0.1/unique;
+    spdadd  172.16.0.0/24  192.168.1.0/24  any  \
+	-P out  ipsec esp/tunnel/10.0.0.2-10.0.0.1/unique;
+
+    # Outbound traffic
+
+    spdadd  172.16.128.0/24  192.168.200.0/24  any  \
+	-P in  ipsec esp/tunnel/10.0.0.1-10.0.0.2/unique;
+    spdadd  192.168.1.0/24  192.168.200.0/24  any  \
+	-P in  ipsec esp/tunnel/10.0.0.1-10.0.0.2/unique;
+
+    spdadd  172.16.1.0/24  172.16.0.0/24  any  \
+	-P in  ipsec esp/tunnel/10.0.0.1-10.0.0.2/unique;
+    spdadd  192.168.1.0/24  172.16.0.0/24  any  \
+	-P in  ipsec esp/tunnel/10.0.0.1-10.0.0.2/unique;
 
 ");
 putconf ("/usr/lib/ssl/openssl.cnf",
