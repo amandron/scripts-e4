@@ -63,7 +63,7 @@ allow-hotplug eth0
 iface eth0 inet static
         address $ip1
         netmask $mask
-		gateway $gw
+	gateway $gw
 	up /root/routage.sh
 	up /root/iptables.sh
 
@@ -110,12 +110,78 @@ remote $remip \{
 	\}
 \}
 
-sainfo anonymous \{
-	pfs_group modp768;
-	encryption_algorithm 3des;
-	authentication_algorithm hmac_md5;
-	compression_algorithm deflate;
-\}
+ sainfo address 172.16.128.0/24 any address  192.168.200.0/24 any
+    {
+	lifetime            time    1 hour;
+
+	encryption_algorithm        aes;
+	authentication_algorithm    hmac_sha1;
+	compression_algorithm       deflate;
+    }
+
+    sainfo  address  192.168.1.0/24 any   address  192.168.200.0/24 any
+    {
+	lifetime            time    1 hour;
+
+	encryption_algorithm        aes;
+	authentication_algorithm    hmac_sha1;
+	compression_algorithm       deflate;
+    }
+
+    sainfo  address  172.16.128.0/24 any   address  172.16.0.0/24 any
+    {
+	lifetime            time    1 hour;
+
+	encryption_algorithm        aes;
+	authentication_algorithm    hmac_sha1;
+	compression_algorithm       deflate;
+    }
+
+    sainfo  address  192.168.1.0/24 any   address  172.16.0.0/24 any
+    {
+	lifetime            time    1 hour;
+
+	encryption_algorithm        aes;
+	authentication_algorithm    hmac_sha1;
+	compression_algorithm       deflate;
+    }
+
+    sainfo  address  192.168.200.0/24 any   address  172.16.128.0/24 any
+    {
+	lifetime            time    1 hour;
+
+	encryption_algorithm        aes;
+	authentication_algorithm    hmac_sha1;
+	compression_algorithm       deflate;
+    }
+
+    sainfo  address  192.168.200.0/24 any   address  192.168.1.0/24 any
+    {
+	lifetime            time    1 hour;
+
+	encryption_algorithm        aes;
+	authentication_algorithm    hmac_sha1;
+	compression_algorithm       deflate;
+    }
+
+    sainfo  address  172.16.0.0/24 any   address  172.16.0.0/24 any
+    {
+	lifetime            time    1 hour;
+
+	encryption_algorithm        aes;
+	authentication_algorithm    hmac_sha1;
+	compression_algorithm       deflate;
+    }
+
+    sainfo  address  172.16.0.0/24 any   address  192.168.1.0/24 any
+    {
+	lifetime            time    1 hour;
+
+	encryption_algorithm        aes;
+	authentication_algorithm    hmac_sha1;
+	compression_algorithm       deflate;
+    }
+
 
 ");
 
