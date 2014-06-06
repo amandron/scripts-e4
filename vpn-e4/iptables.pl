@@ -65,6 +65,11 @@ iptables -A FORWARD -p esp -j ACCEPT
 iptables -A INPUT -p icmp -j ACCEPT
 iptables -A OUTPUT -p icmp -j ACCEPT
 iptables -A FORWARD -p icmp -j ACCEPT
+
+iptables -A INPUT -p tcp --dport 80 -j ACCEPT
+iptables -A OUTPUT -p tcp --sport 80 -j ACCEPT
+iptables -A FORWARD -p tcp --dport 80 -j ACCEPT
+iptables -A FORWARD -p tcp --sport 80 -j ACCEPT
 ");
 
 system "chmod +x /root/iptables.sh";

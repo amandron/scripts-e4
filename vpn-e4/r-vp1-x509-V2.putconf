@@ -10,7 +10,7 @@ my $domain = "gsb.lan";
 my $ip1    = "192.168.1.2";  # eth0 interne
 my $ip2    = "10.0.0.1"; # eth1 liaison vpn
 my $remip  = "10.0.0.2";
-my $mask   = "255.255.255.252";
+my $mask   = "255.255.255.248";
 
 my $mynet  = "192.168.1.0";
 my $remnet = "172.16.128.0";
@@ -111,36 +111,13 @@ remote $remip \{
 	}
 \}
 
- sainfo address 172.16.128.0/24 any address  192.168.200.0/24 any
-    \{
-	 pfs_group modp768;
-	 encryption_algorithm 3des;
+ sainfo anonymous \{
+     pfs_group modp768;
+     encryption_algorithm 3des;
 	 authentication_algorithm hmac_md5;
 	 compression_algorithm deflate;
-    \}
+	\}
 
-    sainfo  address  192.168.1.0/24 any address 192.168.200.0/24 any
-    \{
-	 pfs_group modp768;
-	 encryption_algorithm 3des;
-	 authentication_algorithm hmac_md5;
-	 compression_algorithm deflate;
-    \}
-
-    sainfo  address  172.16.128.0/24 any   address 172.16.0.0/24 any
-    \{
-	 pfs_group modp768;
-	 encryption_algorithm 3des;
-	 authentication_algorithm hmac_md5;
-	 compression_algorithm deflate; 
-    \}
-
-    sainfo  address  192.168.1.0/24 any address 172.16.0.0/24 any
-    \{
-	 pfs_group modp768;
-	 encryption_algorithm 3des;
-	 authentication_algorithm hmac_md5;
-	 compression_algorithm deflate;
 ");
 
 putconf (" /etc/ipsec-tools.conf",
@@ -148,29 +125,12 @@ putconf (" /etc/ipsec-tools.conf",
 flush;
 spdflush;
 
-    spdadd  172.16.128.0/24  192.168.200.0/24  any  \
-	-P in  ipsec esp/tunnel/10.0.0.1-10.0.0.2/require;
+spdadd $mynet/29 $remnet/24 any -P out ipsec
+           esp/tunnel/$ip2-$remip/require;
 
-	spdadd  192.168.200.0/24  172.16.128.0/24  any  \
-	-P out  ipsec esp/tunnel/10.0.0.2-10.0.0.1/require;
+spdadd $remnet/24 $mynet/29 any -P in ipsec
+           esp/tunnel/$remip-$ip2/require;
 
-	pdadd  172.16.128.0/24  172.16.0.0/24  any  \
-	-P in  ipsec esp/tunnel/10.0.0.1-10.0.0.2/require;
- 
-    spdadd  172.16.0.0/24  172.16.128.0/24  any  \
-	-P out  ipsec esp/tunnel/10.0.0.2-10.0.0.1/require;
-
-    spdadd  192.168.1.0/32  192.168.200.0/24  any  \
-	-P in  ipsec esp/tunnel/10.0.0.1-10.0.0.2/require;
-
-	spdadd  192.168.200.0/24  192.168.1.0/24  any  \
-	-P out  ipsec esp/tunnel/10.0.0.2-10.0.0.1/require;
-
-     spdadd  192.168.1.0/32  172.16.0.0/24  any  \
-	-P in  ipsec esp/tunnel/10.0.0.1-10.0.0.2/require;
-
-    spdadd  172.16.0.0/24  192.168.1.0/32  any  \
-	-P out  ipsec esp/tunnel/10.0.0.2-10.0.0.1/require;
 ");
 
 putconf ("/usr/lib/ssl/openssl.cnf",

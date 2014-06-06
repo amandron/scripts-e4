@@ -98,7 +98,7 @@ nameserver $dns2
 putconf ("/root/routage.sh",
 "#!/bin/bash
 echo 1 > /proc/sys/net/ipv4/ip_forward
-route add -net 192.168.1.0/30 gw 172.16.128.254
+route add -net 192.168.1.0/29 gw 172.16.128.254
 ");
 
 
@@ -106,6 +106,7 @@ system "chmod +x /root/routage.sh";
 
 putconf ("/etc/racoon/racoon.conf",
 "
+
 path certificate \"/etc/racoon/certs\";
 
 remote $remip \{
@@ -115,77 +116,35 @@ remote $remip \{
   my_identifier asn1dn;
   peers_identifier asn1dn;
   proposal \{
-  \{
+        
     encryption_algorithm 3des;
     hash_algorithm md5;
     authentication_method rsasig;
     dh_group modp1024;
-    \}
+  }
 \}
 
-sainfo  address  192.168.200.0/24 any address 172.16.128.0/24 any
-\{
-   pfs_group modp768;
-   encryption_algorithm 3des;
+ sainfo anonymous \{
+     pfs_group modp768;
+     encryption_algorithm 3des;
    authentication_algorithm hmac_md5;
    compression_algorithm deflate;
-\}
+  \}
 
-sainfo  address  192.168.200.0/24 any address 192.168.1.0/24 any
-\{
-   pfs_group modp768;
-   encryption_algorithm 3des;
-   authentication_algorithm hmac_md5;
-   compression_algorithm deflate;
-\}
-
-sainfo  address  172.16.0.0/24 any address  172.16.0.0/24 any
- \{
-   pfs_group modp768;
-   encryption_algorithm 3des;
-   authentication_algorithm hmac_md5;
-   compression_algorithm deflate;
-
-sainfo  address  172.16.0.0/24 any address 192.168.1.0/24 any
-\{
-   pfs_group modp768;
-   encryption_algorithm 3des;
-   authentication_algorithm hmac_md5;
-   compression_algorithm deflate;
- \}
 ");
 
-
-
 putconf (" /etc/ipsec-tools.conf",
-  "
-  flush;
-  spdflush;
+"
+flush;
+spdflush;
 
-  spdadd  192.168.200.0/24  172.16.128.0/24  any  \
-  -P out  ipsec esp/tunnel/10.0.0.2-10.0.0.1/require;
+spdadd $mynet/24 $remnet/29 any -P out ipsec
+           esp/tunnel/$ip2-$remip/require;
+           
+spdadd $remnet/29 $mynet/24 any -P in ipsec
+           esp/tunnel/$remip-$ip2/require;
 
-  spdadd  172.16.128.0/24  192.168.200.0/24  any  \
-  -P in  ipsec esp/tunnel/10.0.0.1-10.0.0.2/require;
-
-  spdadd  172.16.0.0/24  172.16.128.0/24  any  \
-  -P out  ipsec esp/tunnel/10.0.0.2-10.0.0.1/require;
-
-  spdadd  172.16.128.0/24  172.16.0.0/24  any  \
-  -P in  ipsec esp/tunnel/10.0.0.1-10.0.0.2/require;
-
-  spdadd  192.168.200.0/24  192.168.1.0/24  any  \
-  -P out  ipsec esp/tunnel/10.0.0.2-10.0.0.1/require;
-
-  spdadd  192.168.1.0/32  192.168.200.0/24  any  \
-  -P in  ipsec esp/tunnel/10.0.0.1-10.0.0.2/require;
-
-  spdadd  172.16.0.0/24  192.168.1.0/32  any  \
-  -P out  ipsec esp/tunnel/10.0.0.2-10.0.0.1/require;
-
-  spdadd  192.168.1.0/32  172.16.0.0/24  any  \
-  -P in  ipsec esp/tunnel/10.0.0.1-10.0.0.2/require;
-  ");
+");
 
 putconf ("/etc/dhcp/dhcpd.conf",
 "
